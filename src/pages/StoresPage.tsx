@@ -1,50 +1,52 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { useAuthStore } from '@/stores/auth.store'
-import { useStoreStore } from '@/stores/store.store'
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import { Input } from '@/ui/input'
+import { useAuthStore } from "@/stores/auth.store";
+import { useStoreStore } from "@/stores/store.store";
+import { Button } from "@/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
+import { Input } from "@/ui/input";
 
 export function StoresPage() {
-  const navigate = useNavigate()
-  const user = useAuthStore((s) => s.user)
-  const signOut = useAuthStore((s) => s.signOut)
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const signOut = useAuthStore((s) => s.signOut);
 
-  const status = useStoreStore((s) => s.status)
-  const error = useStoreStore((s) => s.error)
-  const myStores = useStoreStore((s) => s.myStores)
-  const myJoinRequests = useStoreStore((s) => s.myJoinRequests)
-  const publicSearchResults = useStoreStore((s) => s.publicSearchResults)
+  const status = useStoreStore((s) => s.status);
+  const error = useStoreStore((s) => s.error);
+  const myStores = useStoreStore((s) => s.myStores);
+  const myJoinRequests = useStoreStore((s) => s.myJoinRequests);
+  const publicSearchResults = useStoreStore((s) => s.publicSearchResults);
 
-  const load = useStoreStore((s) => s.load)
-  const selectStore = useStoreStore((s) => s.selectStore)
-  const createStore = useStoreStore((s) => s.createStore)
-  const searchPublicStores = useStoreStore((s) => s.searchPublicStores)
-  const requestJoin = useStoreStore((s) => s.requestJoin)
-  const requestJoinByInviteCode = useStoreStore((s) => s.requestJoinByInviteCode)
+  const load = useStoreStore((s) => s.load);
+  const selectStore = useStoreStore((s) => s.selectStore);
+  const createStore = useStoreStore((s) => s.createStore);
+  const searchPublicStores = useStoreStore((s) => s.searchPublicStores);
+  const requestJoin = useStoreStore((s) => s.requestJoin);
+  const requestJoinByInviteCode = useStoreStore(
+    (s) => s.requestJoinByInviteCode,
+  );
 
-  const [createOpen, setCreateOpen] = useState(false)
-  const [storeName, setStoreName] = useState('')
-  const [storeAddress, setStoreAddress] = useState('')
-  const [storeBusinessNumber, setStoreBusinessNumber] = useState('')
-  const [storePhone, setStorePhone] = useState('')
-  const [isPublic, setIsPublic] = useState(true)
+  const [createOpen, setCreateOpen] = useState(false);
+  const [storeName, setStoreName] = useState("");
+  const [storeAddress, setStoreAddress] = useState("");
+  const [storeBusinessNumber, setStoreBusinessNumber] = useState("");
+  const [storePhone, setStorePhone] = useState("");
+  const [isPublic, setIsPublic] = useState(true);
 
-  const [inviteCode, setInviteCode] = useState('')
-  const [search, setSearch] = useState('')
-  const [message, setMessage] = useState('')
+  const [inviteCode, setInviteCode] = useState("");
+  const [search, setSearch] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!user) return
-    load({ userId: user.id }).catch(() => {})
-  }, [load, user])
+    if (!user) return;
+    load({ userId: user.id }).catch(() => {});
+  }, [load, user]);
 
   const myStoreIds = useMemo(
     () => new Set(myStores.map((s) => s.store.id)),
     [myStores],
-  )
+  );
 
   const joinStatusByStore = useMemo(() => {
     // 같은 지점에 대해 요청이 여러 번 업데이트될 수 있으니 "최신 요청" 기준으로 본다
@@ -52,19 +54,19 @@ export function StoresPage() {
     const map = new Map<
       string,
       { status: string; createdAt: string; via: string }
-    >()
+    >();
     for (const r of myJoinRequests) {
-      const prev = map.get(r.store_id)
+      const prev = map.get(r.store_id);
       if (!prev || prev.createdAt < r.created_at) {
         map.set(r.store_id, {
           status: r.status,
           createdAt: r.created_at,
           via: r.via,
-        })
+        });
       }
     }
-    return map
-  }, [myJoinRequests])
+    return map;
+  }, [myJoinRequests]);
 
   return (
     <div className="min-h-full px-4 py-8">
@@ -79,8 +81,8 @@ export function StoresPage() {
           <Button
             variant="outline"
             onClick={async () => {
-              await signOut()
-              navigate('/login', { replace: true })
+              await signOut();
+              navigate("/login", { replace: true });
             }}
           >
             로그아웃
@@ -100,8 +102,8 @@ export function StoresPage() {
               type="button"
               className="text-left"
               onClick={() => {
-                selectStore(store.id)
-                navigate('/calendar', { replace: true })
+                selectStore(store.id);
+                navigate("/store", { replace: true });
               }}
             >
               <Card className="hover:bg-accent/30">
@@ -109,16 +111,16 @@ export function StoresPage() {
                   <CardTitle className="flex items-center justify-between">
                     <span className="truncate">{store.name}</span>
                     <span className="rounded-md border px-2 py-1 text-xs text-muted-foreground">
-                      {role === 'owner'
-                        ? 'owner'
-                        : role === 'manager'
-                          ? 'manager'
-                          : 'staff'}
+                      {role === "owner"
+                        ? "owner"
+                        : role === "manager"
+                          ? "manager"
+                          : "staff"}
                     </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  {store.is_public ? '검색 가능' : '비공개'}
+                  {store.is_public ? "검색 가능" : "비공개"}
                 </CardContent>
               </Card>
             </button>
@@ -155,12 +157,12 @@ export function StoresPage() {
                 variant="outline"
                 disabled={!user}
                 onClick={async () => {
-                  if (!user) return
+                  if (!user) return;
                   await requestJoinByInviteCode({
                     userId: user.id,
                     inviteCode,
                     message,
-                  })
+                  });
                 }}
               >
                 요청
@@ -198,22 +200,22 @@ export function StoresPage() {
 
             <div className="space-y-2">
               {publicSearchResults.map((s) => {
-                const isMember = myStoreIds.has(s.id)
-                const join = joinStatusByStore.get(s.id) ?? null
-                const isPending = join?.status === 'pending'
-                const disabled = !user || isMember || isPending
+                const isMember = myStoreIds.has(s.id);
+                const join = joinStatusByStore.get(s.id) ?? null;
+                const isPending = join?.status === "pending";
+                const disabled = !user || isMember || isPending;
 
                 const subtitle = isMember
-                  ? '이미 입장한 지점'
+                  ? "이미 입장한 지점"
                   : isPending
-                    ? '요청 대기중'
-                    : '검색 가능'
+                    ? "요청 대기중"
+                    : "검색 가능";
 
                 const buttonLabel = isMember
-                  ? '입장됨'
+                  ? "입장됨"
                   : isPending
-                    ? '대기'
-                    : '요청'
+                    ? "대기"
+                    : "요청";
 
                 return (
                   <div
@@ -230,20 +232,20 @@ export function StoresPage() {
                       variant="outline"
                       disabled={disabled}
                       onClick={async () => {
-                        if (!user) return
-                        if (isMember || isPending) return
+                        if (!user) return;
+                        if (isMember || isPending) return;
                         await requestJoin({
                           userId: user.id,
                           storeId: s.id,
-                          via: 'search',
+                          via: "search",
                           message,
-                        })
+                        });
                       }}
                     >
                       {buttonLabel}
                     </Button>
                   </div>
-                )
+                );
               })}
               {publicSearchResults.length === 0 && search.trim() ? (
                 <p className="text-sm text-muted-foreground">
@@ -255,7 +257,7 @@ export function StoresPage() {
         </Card>
 
         <div className="text-xs text-muted-foreground">
-          {status === 'loading' ? '불러오는 중…' : null}
+          {status === "loading" ? "불러오는 중…" : null}
         </div>
       </div>
 
@@ -284,32 +286,32 @@ export function StoresPage() {
                 />
               </div>
 
-                <div className="grid gap-1">
-                  <div className="text-sm font-medium">주소 (선택)</div>
-                  <Input
-                    value={storeAddress}
-                    placeholder="예) 서울시 강남구 ..."
-                    onChange={(e) => setStoreAddress(e.target.value)}
-                  />
-                </div>
+              <div className="grid gap-1">
+                <div className="text-sm font-medium">주소 (선택)</div>
+                <Input
+                  value={storeAddress}
+                  placeholder="예) 서울시 강남구 ..."
+                  onChange={(e) => setStoreAddress(e.target.value)}
+                />
+              </div>
 
-                <div className="grid gap-1">
-                  <div className="text-sm font-medium">사업자번호 (선택)</div>
-                  <Input
-                    value={storeBusinessNumber}
-                    placeholder="예) 123-45-67890"
-                    onChange={(e) => setStoreBusinessNumber(e.target.value)}
-                  />
-                </div>
+              <div className="grid gap-1">
+                <div className="text-sm font-medium">사업자번호 (선택)</div>
+                <Input
+                  value={storeBusinessNumber}
+                  placeholder="예) 123-45-67890"
+                  onChange={(e) => setStoreBusinessNumber(e.target.value)}
+                />
+              </div>
 
-                <div className="grid gap-1">
-                  <div className="text-sm font-medium">전화번호 (선택)</div>
-                  <Input
-                    value={storePhone}
-                    placeholder="예) 02-1234-5678"
-                    onChange={(e) => setStorePhone(e.target.value)}
-                  />
-                </div>
+              <div className="grid gap-1">
+                <div className="text-sm font-medium">전화번호 (선택)</div>
+                <Input
+                  value={storePhone}
+                  placeholder="예) 02-1234-5678"
+                  onChange={(e) => setStorePhone(e.target.value)}
+                />
+              </div>
 
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -323,7 +325,7 @@ export function StoresPage() {
               <Button
                 disabled={!user}
                 onClick={async () => {
-                  if (!user) return
+                  if (!user) return;
                   const created = await createStore({
                     userId: user.id,
                     name: storeName,
@@ -331,15 +333,15 @@ export function StoresPage() {
                     businessNumber: storeBusinessNumber,
                     phone: storePhone,
                     isPublic,
-                  })
-                  if (!created) return
-                  selectStore(created.id)
-                  setCreateOpen(false)
-                  setStoreName('')
-                  setStoreAddress('')
-                  setStoreBusinessNumber('')
-                  setStorePhone('')
-                  navigate('/calendar', { replace: true })
+                  });
+                  if (!created) return;
+                  selectStore(created.id);
+                  setCreateOpen(false);
+                  setStoreName("");
+                  setStoreAddress("");
+                  setStoreBusinessNumber("");
+                  setStorePhone("");
+                  navigate("/store", { replace: true });
                 }}
               >
                 생성하고 들어가기
@@ -349,6 +351,5 @@ export function StoresPage() {
         </div>
       ) : null}
     </div>
-  )
+  );
 }
-

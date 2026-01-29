@@ -1,22 +1,28 @@
 ### 서비스 개요
+
 가족이 운영하는 편의점 운영 앱
 웹 + 반응형 + PWA 버전 우선
 비회원 사용 불가, 카카오 로그인
 
 ### 사용자 흐름
-1) 로그인 (카카오)
-2) 지점 선택
-  - 목록
-  - + 지점 추가
-  - 초대 코드 입력
-  - 지점 검색 → 입장 요청
-3) 메인 앱
+
+1. 로그인 (카카오)
+2. 지점 선택
+
+- 목록
+- - 지점 추가
+- 초대 코드 입력
+- 지점 검색 → 입장 요청
+
+3. 메인 앱
 
 ### 권한 구조
+
 - 매니저: 지점 생성, 직원 초대/승인, 매니저 권한 부여, 스케줄 CRUD, 요청 승인
 - 직원: 스케줄 조회, 수정 요청, 전달사항 작성
 
 ### 메인 메뉴
+
 - 캘린더 (일/주/월)
 - 관리
   - 발주 금지 목록
@@ -28,31 +34,37 @@
 ### 주요 화면 요구사항
 
 #### 캘린더 화면
+
 - 상단: 날짜, 뷰 선택 (일/주/월)
 - 본문: 스케줄 카드 (근무, 전달사항 등)
 - 플로팅 + 버튼
 
 #### 기록 생성 모달
+
 - 스케줄 타입 선택
 - 시간/담당자
 - 메모
 - 사진/영상 업로드
 
 #### 관리 목록
+
 - 발주 금지 목록
 - 신상 발주
 - 유통기한 임박
 
 #### 히스토리
+
 - 시간순 이벤트 로그
 - 필터 (유형/사용자)
 
 #### 설정
+
 - 지점 정보
 - 초대 코드 생성
 - 직원 관리
 
 ### 공통 UI/UX 원칙
+
 - 모바일 우선 반응형
 - 버튼 최소화
 - 빠른 접근성
@@ -76,6 +88,7 @@ cp .env.example .env
 ```
 
 필수 값:
+
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
@@ -96,7 +109,22 @@ MVP 기준으로 **모든 데이터를 `records` 하나로 통합**합니다. (�
 ```sql
 create extension if not exists pgcrypto;
 
-create type record_type as enum ('shift', 'note', 'order', 'expiry');
+-- record_type (idempotent: 기존 enum이면 값만 추가)
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'record_type') then
+    create type public.record_type as enum ('shift', 'note', 'order', 'expiry', 'announcement', 'todo');
+  else
+    begin
+      alter type public.record_type add value if not exists 'announcement';
+    exception when others then null;
+    end;
+    begin
+      alter type public.record_type add value if not exists 'todo';
+    exception when others then null;
+    end;
+  end if;
+end $$;
 
 create table if not exists public.records (
   id uuid primary key default gen_random_uuid(),
@@ -123,20 +151,91 @@ alter table public.records enable row level security;
 
 create policy "records_select_own"
   on public.records for select
-  using (auth.uid() = created_by);
+  using (
+    deleted_at is null
+    and (
+      (store_id is null and auth.uid() = created_by)
+      or (
+        store_id is not null
+        and exists (
+          select 1
+          from public.store_members m
+          where m.store_id = records.store_id
+            and m.user_id = auth.uid()
+            and m.deleted_at is null
+        )
+      )
+    )
+  );
 
 create policy "records_insert_own"
   on public.records for insert
-  with check (auth.uid() = created_by);
+  with check (
+    deleted_at is null
+    and auth.uid() = created_by
+    and (
+      (store_id is null)
+      or (
+        store_id is not null
+        and exists (
+          select 1
+          from public.store_members m
+          where m.store_id = records.store_id
+            and m.user_id = auth.uid()
+            and m.deleted_at is null
+        )
+        and (
+          type not in ('shift','announcement')
+          or public.is_store_manager_or_owner(store_id)
+        )
+      )
+    )
+  );
 
 create policy "records_update_own"
   on public.records for update
-  using (auth.uid() = created_by)
-  with check (auth.uid() = created_by);
+  using (
+    deleted_at is null
+    and (
+      (store_id is null and auth.uid() = created_by)
+      or (
+        store_id is not null
+        and (
+          auth.uid() = created_by
+          or (type in ('shift','announcement') and public.is_store_manager_or_owner(store_id))
+        )
+      )
+    )
+  )
+  with check (
+    deleted_at is null
+    and (
+      (store_id is null and auth.uid() = created_by)
+      or (
+        store_id is not null
+        and (
+          auth.uid() = created_by
+          or (type in ('shift','announcement') and public.is_store_manager_or_owner(store_id))
+        )
+      )
+    )
+  );
 
 create policy "records_delete_own"
   on public.records for delete
-  using (auth.uid() = created_by);
+  using (
+    deleted_at is null
+    and (
+      (store_id is null and auth.uid() = created_by)
+      or (
+        store_id is not null
+        and (
+          auth.uid() = created_by
+          or (type in ('shift','announcement') and public.is_store_manager_or_owner(store_id))
+        )
+      )
+    )
+  );
 
 -- ---------------------------------------------------------------------------
 -- Stores / Members / Join Requests / Staff management
@@ -204,6 +303,18 @@ create table if not exists public.profiles (
 );
 
 create index if not exists profiles_user_id_idx on public.profiles (user_id);
+
+-- ---------------------------------------------------------------------------
+-- Record pins (공지 중요표시)
+-- ---------------------------------------------------------------------------
+create table if not exists public.record_pins (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  record_id uuid not null references public.records(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, record_id)
+);
+
+create index if not exists record_pins_user_id_idx on public.record_pins (user_id);
 
 -- 권한 체크 helper
 create or replace function public.is_store_owner(p_store_id uuid)
@@ -435,6 +546,7 @@ alter table public.stores enable row level security;
 alter table public.store_members enable row level security;
 alter table public.store_join_requests enable row level security;
 alter table public.profiles enable row level security;
+alter table public.record_pins enable row level security;
 
 -- stores: 멤버는 조회 가능 + public은 최소 조회 가능
 create policy "stores_select_member_or_public"
@@ -522,6 +634,23 @@ create policy "profiles_update_own"
   using (auth.uid() = user_id and deleted_at is null)
   with check (auth.uid() = user_id and deleted_at is null);
 
+-- record_pins: 본인만 select/insert/delete
+drop policy if exists "record_pins_select_own" on public.record_pins;
+drop policy if exists "record_pins_insert_own" on public.record_pins;
+drop policy if exists "record_pins_delete_own" on public.record_pins;
+
+create policy "record_pins_select_own"
+  on public.record_pins for select
+  using (auth.uid() = user_id);
+
+create policy "record_pins_insert_own"
+  on public.record_pins for insert
+  with check (auth.uid() = user_id);
+
+create policy "record_pins_delete_own"
+  on public.record_pins for delete
+  using (auth.uid() = user_id);
+
 -- ---------------------------------------------------------------------------
 -- 마이그레이션(기존 프로젝트에 적용)
 -- ---------------------------------------------------------------------------
@@ -532,6 +661,7 @@ alter table public.stores add column if not exists business_number text null;
 alter table public.stores add column if not exists phone text null;
 alter table public.store_members add column if not exists deleted_at timestamptz null;
 alter table public.store_join_requests add column if not exists deleted_at timestamptz null;
+alter table public.record_pins add column if not exists created_at timestamptz not null default now();
 alter table public.profiles add column if not exists display_name text null;
 alter table public.profiles add column if not exists birth_date date null;
 alter table public.profiles add column if not exists phone text null;
@@ -547,4 +677,3 @@ alter table public.profiles add column if not exists deleted_at timestamptz null
 
 - **`/login`**: Supabase OAuth(카카오) 로그인
 - **`/calendar`**: 월/주/일/기간 캘린더 + 스케줄 등록/표시
-

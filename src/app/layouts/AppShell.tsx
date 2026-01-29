@@ -1,30 +1,31 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { CalendarDays, Clock, Settings, Wrench } from 'lucide-react'
-import type { ComponentType } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { CalendarDays, Home, Settings, Store } from "lucide-react";
+import type { ComponentType } from "react";
 
-import { cn } from '@/lib/utils'
-import { useCurrentStore } from '@/features/store/useCurrentStore'
+import { cn } from "@/lib/utils";
+import { useCurrentStore } from "@/features/store/useCurrentStore";
 
 type TabItem = {
-  to: string
-  label: string
-  Icon: ComponentType<{ className?: string }>
-}
+  to: string;
+  label: string;
+  Icon: ComponentType<{ className?: string }>;
+};
 
 const TABS: TabItem[] = [
-  { to: '/calendar', label: '캘린더', Icon: CalendarDays },
-  { to: '/manage', label: '게시판', Icon: Wrench },
-  { to: '/history', label: '히스토리', Icon: Clock },
-  { to: '/settings', label: '설정', Icon: Settings },
-]
+  { to: "/home", label: "홈", Icon: Home },
+  { to: "/store", label: "매장", Icon: Store },
+  { to: "/calendar", label: "캘린더", Icon: CalendarDays },
+  { to: "/settings", label: "설정", Icon: Settings },
+];
 
 export function AppShell() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { store } = useCurrentStore()
-  const storeName = store?.name ?? '지점'
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { store } = useCurrentStore();
+  const storeName = store?.name ?? "지점";
   const showBack =
-    location.pathname.startsWith('/settings/') && location.pathname !== '/settings'
+    location.pathname.startsWith("/settings/") &&
+    location.pathname !== "/settings";
 
   return (
     <div className="min-h-full bg-background text-foreground">
@@ -46,9 +47,9 @@ export function AppShell() {
           <button
             type="button"
             className="rounded-md border px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
-            onClick={() => navigate('/stores')}
+            onClick={() => navigate("/store")}
           >
-            지점 변경
+            매장
           </button>
         </div>
       </header>
@@ -65,8 +66,8 @@ export function AppShell() {
               to={to}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-xs text-muted-foreground',
-                  isActive && 'text-foreground',
+                  "flex flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-xs text-muted-foreground",
+                  isActive && "text-foreground",
                 )
               }
             >
@@ -77,6 +78,5 @@ export function AppShell() {
         </div>
       </nav>
     </div>
-  )
+  );
 }
-
