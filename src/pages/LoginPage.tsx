@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
 import { useAuthStore } from '@/stores/auth.store'
+import loginBg from '@/assets/image/login_bg.png'
 
 export function LoginPage() {
   const { state } = useLocation()
@@ -26,37 +27,29 @@ export function LoginPage() {
   }, [navigate, nextPath, status])
 
   return (
-    <div className="min-h-full px-4 py-10">
-      <div className="mx-auto w-full max-w-md">
-        <Card>
-          <CardHeader>
-            <CardTitle>로그인</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              오늘 근무와 전달사항이 절대 새지 않도록, 로그인부터 시작합니다.
-            </p>
-            {error ? (
-              <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </p>
-            ) : null}
-            <Button
-              type="button"
-              className="w-full"
-              onClick={async () => {
-                setError(null)
-                try {
-                  await signInWithKakao(redirectTo)
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : '로그인에 실패했습니다.')
-                }
-              }}
-            >
-              카카오로 로그인
-            </Button>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat">
+      <div className="min-h-screen px-4 py-10">
+        <div className="mx-auto w-full max-w-md">
+          <img src={loginBg} alt="login-bg" className="w-full h-full object-cover" />
+        </div>
+      </div>
+      <div className="fixed bottom-[30px] left-0 right-0 px-4">
+        <div className="mx-auto w-full max-w-md">
+          <Button
+            type="button"
+            className="w-full"
+            onClick={async () => {
+              setError(null)
+              try {
+                await signInWithKakao(redirectTo)
+              } catch (e) {
+                setError(e instanceof Error ? e.message : '로그인에 실패했습니다.')
+              }
+            }}
+          >
+            카카오로 로그인
+          </Button>
+        </div>
       </div>
     </div>
   )
