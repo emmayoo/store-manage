@@ -1,5 +1,6 @@
+import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { CalendarDays, Home, Settings, Store } from "lucide-react";
+import { Bell, CalendarDays, Home, Plus, Store, User } from "lucide-react";
 import type { ComponentType } from "react";
 
 import { cn } from "@/lib/utils";
@@ -11,25 +12,41 @@ type TabItem = {
   Icon: ComponentType<{ className?: string }>;
 };
 
+/** 와이어프레임: Home | Cal | + | Store | My */
 const TABS: TabItem[] = [
   { to: "/home", label: "홈", Icon: Home },
-  { to: "/store", label: "매장", Icon: Store },
   { to: "/calendar", label: "캘린더", Icon: CalendarDays },
-  { to: "/settings", label: "설정", Icon: Settings },
+  { to: "/add", label: "", Icon: Plus },
+  { to: "/store", label: "매장", Icon: Store },
+  { to: "/settings", label: "My", Icon: User },
 ];
 
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const { store } = useCurrentStore();
-  const storeName = store?.name ?? "지점";
+  const storeName = store?.name ?? "매장";
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const notifyRef = useRef<HTMLDivElement>(null);
+
   const showBack =
     location.pathname.startsWith("/settings/") &&
     location.pathname !== "/settings";
 
+  useEffect(() => {
+    if (!notifyOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (notifyRef.current && !notifyRef.current.contains(e.target as Node)) {
+        setNotifyOpen(false);
+      }
+    }
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [notifyOpen]);
+
   return (
     <div className="min-h-full bg-background text-foreground">
-      {/* Header */}
+      {/* Header: 현재 매장(전환) / 알림 🔔 */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 pb-2 pt-[calc(12px+env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
@@ -42,15 +59,45 @@ export function AppShell() {
                 뒤로
               </button>
             ) : null}
-            <div className="text-base font-semibold">{storeName}</div>
+            <button
+              type="button"
+              className="text-base font-semibold hover:underline"
+              onClick={() => navigate("/store")}
+              title="매장 전환"
+            >
+              {storeName} ▼
+            </button>
           </div>
-          <button
-            type="button"
-            className="rounded-md border px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
-            onClick={() => navigate("/store")}
-          >
-            매장
-          </button>
+          <div className="relative" ref={notifyRef}>
+            <button
+              type="button"
+              className="rounded-md p-2 text-muted-foreground hover:bg-accent"
+              onClick={() => setNotifyOpen((o) => !o)}
+              title="알림"
+              aria-label="알림"
+              aria-expanded={notifyOpen}
+            >
+              <Bell className="h-5 w-5" />
+            </button>
+            {notifyOpen ? (
+              <div
+                className="absolute right-0 top-full z-50 mt-1 min-w-[200px] rounded-md border bg-background p-3 shadow-md"
+                role="dialog"
+                aria-label="알림"
+              >
+                <p className="text-sm text-muted-foreground">
+                  알림 기능은 준비 중입니다.
+                </p>
+                <button
+                  type="button"
+                  className="mt-2 text-sm font-medium text-primary hover:underline"
+                  onClick={() => setNotifyOpen(false)}
+                >
+                  확인
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -59,20 +106,20 @@ export function AppShell() {
       </div>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto grid max-w-2xl grid-cols-4 px-2 pb-[env(safe-area-inset-bottom)] pt-2">
+        <div className="mx-auto grid max-w-2xl grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)] pt-2">
           {TABS.map(({ to, label, Icon }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center justify-center gap-1 rounded-md px-2 py-2 text-xs text-muted-foreground",
-                  isActive && "text-foreground",
+                  "flex flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 text-xs text-muted-foreground",
+                  isActive && "text-foreground"
                 )
               }
             >
               <Icon className="h-5 w-5" />
-              <span>{label}</span>
+              {label ? <span>{label}</span> : null}
             </NavLink>
           ))}
         </div>

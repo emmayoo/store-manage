@@ -21,7 +21,7 @@ export function SettingsStorePage() {
   const softDeleteStore = useStoreStore((s) => s.softDeleteStore);
   const loadMembers = useStoreStore((s) => s.loadMembers);
   const loadPendingRequestsForStore = useStoreStore(
-    (s) => s.loadPendingRequestsForStore,
+    (s) => s.loadPendingRequestsForStore
   );
   const approveJoinRequest = useStoreStore((s) => s.approveJoinRequest);
   const rejectJoinRequest = useStoreStore((s) => s.rejectJoinRequest);
@@ -63,9 +63,9 @@ export function SettingsStorePage() {
     return (
       <div className="min-h-full px-4 py-6">
         <div className="mx-auto w-full max-w-2xl">
-          <h1 className="text-xl font-semibold">지점</h1>
+          <h1 className="text-xl font-semibold">매장</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            선택된 지점이 없습니다.
+            선택된 매장이 없습니다.
           </p>
           <div className="mt-4">
             <Link className="text-sm underline" to="/store">
@@ -81,19 +81,19 @@ export function SettingsStorePage() {
     <div className="min-h-full px-4 py-6">
       <div className="mx-auto w-full max-w-2xl space-y-4">
         <div>
-          <h1 className="text-xl font-semibold">지점</h1>
+          <h1 className="text-xl font-semibold">매장</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            지점 정보는 모두 볼 수 있고, 수정은 owner만 가능합니다.
+            매장 정보는 모두 볼 수 있고, 수정은 owner만 가능합니다.
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>현재 지점</CardTitle>
+            <CardTitle>현재 매장</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm">
-              <span className="text-muted-foreground">지점: </span>
+              <span className="text-muted-foreground">매장: </span>
               <span className="font-medium">{store.name}</span>
               <span className="ml-2 rounded-md border px-2 py-1 text-xs text-muted-foreground">
                 {role}
@@ -226,18 +226,18 @@ export function SettingsStorePage() {
         {canEditStore ? (
           <Card className="border-destructive/30">
             <CardHeader>
-              <CardTitle>지점 삭제</CardTitle>
+              <CardTitle>매장 삭제</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                지점은 완전 삭제되지 않고 soft delete 처리되어 이력은 남습니다.
+                매장은 완전 삭제되지 않고 soft delete 처리되어 이력은 남습니다.
               </p>
               <Button
                 variant="destructive"
                 onClick={async () => {
                   if (!user) return;
                   const ok = window.confirm(
-                    "정말 지점을 삭제할까요?\n(이 작업은 되돌리기 어렵습니다)",
+                    "정말 매장을 삭제할까요?\n(이 작업은 되돌리기 어렵습니다)"
                   );
                   if (!ok) return;
                   await softDeleteStore({ storeId: store.id });
@@ -246,7 +246,7 @@ export function SettingsStorePage() {
                   navigate("/store", { replace: true });
                 }}
               >
-                지점 삭제
+                매장 삭제
               </Button>
             </CardContent>
           </Card>
@@ -279,7 +279,7 @@ function StoreInfoPanel(props: {
   const [name, setName] = useState(props.name);
   const [address, setAddress] = useState(props.address ?? "");
   const [businessNumber, setBusinessNumber] = useState(
-    props.businessNumber ?? "",
+    props.businessNumber ?? ""
   );
   const [phone, setPhone] = useState(props.phone ?? "");
   const [isPublic, setIsPublic] = useState(props.isPublic);
@@ -294,11 +294,11 @@ function StoreInfoPanel(props: {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>지점 정보</CardTitle>
+        <CardTitle>매장 정보</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid gap-1">
-          <div className="text-sm font-medium">지점 이름</div>
+          <div className="text-sm font-medium">매장 이름</div>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}

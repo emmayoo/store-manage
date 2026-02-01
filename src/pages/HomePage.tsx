@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Pin } from "lucide-react";
 
 import { dayjs } from "@/lib/day";
@@ -26,8 +26,10 @@ function isDone(todo: { payload: unknown }) {
 
 export function HomePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const myStores = useStoreStore((s) => s.myStores);
+  const todoInputRef = useRef<HTMLInputElement>(null);
 
   const loading = useHomeStore((s) => s.loading);
   const error = useHomeStore((s) => s.error);
@@ -43,6 +45,16 @@ export function HomePage() {
   const toggleTodoDone = useHomeStore((s) => s.toggleTodoDone);
 
   const [todoText, setTodoText] = useState("");
+
+  // Add 페이지에서 "TODO 추가"로 왔을 때 입력란 포커스(한 번만)
+  const focusTodo = (location.state as { focusTodo?: boolean } | null)
+    ?.focusTodo;
+  useEffect(() => {
+    if (!focusTodo || !todoInputRef.current) return;
+    todoInputRef.current.focus();
+    navigate(location.pathname, { replace: true, state: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- focusTodo 시 한 번만 실행
+  }, [focusTodo]);
 
   const storeIds = useMemo(() => myStores.map((s) => s.store.id), [myStores]);
 
@@ -76,6 +88,7 @@ export function HomePage() {
           <CardContent className="space-y-3">
             <div className="flex gap-2">
               <Input
+                ref={todoInputRef}
                 value={todoText}
                 placeholder="예) 14시 폐기 체크"
                 onChange={(e) => setTodoText(e.target.value)}
@@ -184,13 +197,13 @@ export function HomePage() {
             const todayShifts = shifts.filter((s) =>
               s.starts_at
                 ? dayjs(s.starts_at).format("YYYY-MM-DD") === todayKey
-                : false,
+                : false
             );
 
             const upcoming = shifts.filter((s) =>
               s.starts_at
                 ? dayjs(s.starts_at).isAfter(dayjs(), "minute")
-                : false,
+                : false
             );
             const nextTwo = upcoming.slice(0, 2);
 

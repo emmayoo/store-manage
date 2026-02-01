@@ -16,7 +16,7 @@ export function InvitePage() {
   const myStores = useStoreStore((s) => s.myStores);
   const selectStore = useStoreStore((s) => s.selectStore);
   const requestJoinByInviteCode = useStoreStore(
-    (s) => s.requestJoinByInviteCode,
+    (s) => s.requestJoinByInviteCode
   );
 
   const [message, setMessage] = useState<string | null>(null);
@@ -41,8 +41,8 @@ export function InvitePage() {
     requestJoinByInviteCode({ userId: user.id, inviteCode })
       .then(() =>
         setMessage(
-          "입장 요청을 보냈습니다. 승인되면 지점 목록에서 선택할 수 있어요.",
-        ),
+          "입장 요청을 보냈습니다. 승인되면 매장 목록에서 선택할 수 있어요."
+        )
       )
       .catch(() => setMessage("입장 요청에 실패했습니다."));
   }, [inviteCode, requestJoinByInviteCode, user]);
@@ -58,7 +58,7 @@ export function InvitePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              링크로 들어오면 자동으로 지점 입장 요청을 보냅니다.
+              링크로 들어오면 자동으로 매장 입장 요청을 보냅니다.
             </p>
             {message ? (
               <div className="rounded-md border bg-background p-3 text-sm">
@@ -68,7 +68,7 @@ export function InvitePage() {
             <Button
               className="w-full"
               onClick={() => {
-                // 요청이 승인되었거나 이미 멤버일 수 있으니 지점 선택으로 유도
+                // 요청이 승인되었거나 이미 멤버일 수 있으니 매장 선택으로 유도
                 if (already) {
                   selectStore(null);
                 }

@@ -1,40 +1,40 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
-import { useCurrentStore } from '@/features/store/useCurrentStore'
-import { useStoreStore } from '@/stores/store.store'
-import { Button } from '@/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card'
-import type { StoreRole } from '@/types/database'
+import { useCurrentStore } from "@/features/store/useCurrentStore";
+import { useStoreStore } from "@/stores/store.store";
+import { Button } from "@/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
+import type { StoreRole } from "@/types/database";
 
 export function SettingsStaffPage() {
-  const { storeId, store, canEditStore } = useCurrentStore()
+  const { storeId, store, canEditStore } = useCurrentStore();
 
-  const rotateInviteCode = useStoreStore((s) => s.rotateInviteCode)
-  const loadMembers = useStoreStore((s) => s.loadMembers)
-  const setMemberRole = useStoreStore((s) => s.setMemberRole)
-  const removeMember = useStoreStore((s) => s.removeMember)
+  const rotateInviteCode = useStoreStore((s) => s.rotateInviteCode);
+  const loadMembers = useStoreStore((s) => s.loadMembers);
+  const setMemberRole = useStoreStore((s) => s.setMemberRole);
+  const removeMember = useStoreStore((s) => s.removeMember);
 
   const [members, setMembers] = useState<
     Array<{
-      store_id: string
-      user_id: string
-      role: StoreRole
-      created_at: string
+      store_id: string;
+      user_id: string;
+      role: StoreRole;
+      created_at: string;
     }>
-  >([])
+  >([]);
 
   useEffect(() => {
-    if (!storeId || !canEditStore) return
+    if (!storeId || !canEditStore) return;
     loadMembers({ storeId })
       .then((rows) => setMembers(rows))
-      .catch(() => {})
-  }, [canEditStore, loadMembers, storeId])
+      .catch(() => {});
+  }, [canEditStore, loadMembers, storeId]);
 
   async function refreshMembers() {
-    if (!storeId) return
-    const rows = await loadMembers({ storeId })
-    setMembers(rows)
+    if (!storeId) return;
+    const rows = await loadMembers({ storeId });
+    setMembers(rows);
   }
 
   if (!canEditStore) {
@@ -47,12 +47,12 @@ export function SettingsStaffPage() {
           </p>
           <div className="mt-4">
             <Link className="text-sm underline" to="/settings/store">
-              지점 설정으로 돌아가기
+              매장 설정으로 돌아가기
             </Link>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -89,7 +89,7 @@ export function SettingsStaffPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {members.map((m) => {
-              const isOwner = m.role === 'owner'
+              const isOwner = m.role === "owner";
               return (
                 <div
                   key={m.user_id}
@@ -97,7 +97,9 @@ export function SettingsStaffPage() {
                 >
                   <div>
                     <div className="text-sm font-medium">{m.user_id}</div>
-                    <div className="text-xs text-muted-foreground">role: {m.role}</div>
+                    <div className="text-xs text-muted-foreground">
+                      role: {m.role}
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     {!isOwner ? (
@@ -105,10 +107,14 @@ export function SettingsStaffPage() {
                         className="rounded-md border bg-background px-2 py-2 text-sm"
                         value={m.role}
                         onChange={async (e) => {
-                          if (!storeId) return
-                          const nextRole = e.target.value as StoreRole
-                          await setMemberRole({ storeId, userId: m.user_id, role: nextRole })
-                          await refreshMembers()
+                          if (!storeId) return;
+                          const nextRole = e.target.value as StoreRole;
+                          await setMemberRole({
+                            storeId,
+                            userId: m.user_id,
+                            role: nextRole,
+                          });
+                          await refreshMembers();
                         }}
                       >
                         <option value="staff">staff</option>
@@ -124,11 +130,12 @@ export function SettingsStaffPage() {
                       <Button
                         variant="outline"
                         onClick={async () => {
-                          if (!storeId) return
-                          const ok = window.confirm('이 직원을 지점에서 제거할까요?')
-                          if (!ok) return
-                          await removeMember({ storeId, userId: m.user_id })
-                          await refreshMembers()
+                          if (!storeId) return;
+                          const ok =
+                            window.confirm("이 직원을 매장에서 제거할까요?");
+                          if (!ok) return;
+                          await removeMember({ storeId, userId: m.user_id });
+                          await refreshMembers();
                         }}
                       >
                         제거
@@ -136,7 +143,7 @@ export function SettingsStaffPage() {
                     ) : null}
                   </div>
                 </div>
-              )
+              );
             })}
             {members.length === 0 ? (
               <p className="text-sm text-muted-foreground">멤버가 없습니다.</p>
@@ -145,21 +152,21 @@ export function SettingsStaffPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
 
 function InviteLinkPanel(props: {
-  storeId: string
-  inviteCode: string
-  rotateInviteCode: (opts: { storeId: string }) => Promise<string | null>
+  storeId: string;
+  inviteCode: string;
+  rotateInviteCode: (opts: { storeId: string }) => Promise<string | null>;
 }) {
-  const [inviteCode, setInviteCode] = useState(props.inviteCode)
+  const [inviteCode, setInviteCode] = useState(props.inviteCode);
 
   const inviteLink = useMemo(() => {
-    const code = inviteCode.trim()
-    if (!code) return null
-    return `${window.location.origin}/invite/${code}`
-  }, [inviteCode])
+    const code = inviteCode.trim();
+    if (!code) return null;
+    return `${window.location.origin}/invite/${code}`;
+  }, [inviteCode]);
 
   return (
     <>
@@ -176,12 +183,12 @@ function InviteLinkPanel(props: {
           variant="outline"
           disabled={!inviteLink}
           onClick={async () => {
-            if (!inviteLink) return
+            if (!inviteLink) return;
             try {
-              await navigator.clipboard.writeText(inviteLink)
-              alert('초대 링크를 복사했습니다.')
+              await navigator.clipboard.writeText(inviteLink);
+              alert("초대 링크를 복사했습니다.");
             } catch {
-              window.prompt('아래 링크를 복사해 주세요.', inviteLink)
+              window.prompt("아래 링크를 복사해 주세요.", inviteLink);
             }
           }}
         >
@@ -190,14 +197,15 @@ function InviteLinkPanel(props: {
         <Button
           variant="outline"
           onClick={async () => {
-            const next = await props.rotateInviteCode({ storeId: props.storeId })
-            if (next) setInviteCode(next)
+            const next = await props.rotateInviteCode({
+              storeId: props.storeId,
+            });
+            if (next) setInviteCode(next);
           }}
         >
           링크 재발급
         </Button>
       </div>
     </>
-  )
+  );
 }
-

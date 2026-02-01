@@ -24,7 +24,7 @@ export function StoresPage() {
   const searchPublicStores = useStoreStore((s) => s.searchPublicStores);
   const requestJoin = useStoreStore((s) => s.requestJoin);
   const requestJoinByInviteCode = useStoreStore(
-    (s) => s.requestJoinByInviteCode,
+    (s) => s.requestJoinByInviteCode
   );
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -45,7 +45,7 @@ export function StoresPage() {
 
   const myStoreIds = useMemo(
     () => new Set(myStores.map((s) => s.store.id)),
-    [myStores],
+    [myStores]
   );
 
   const joinStatusByStore = useMemo(() => {
@@ -73,9 +73,9 @@ export function StoresPage() {
       <div className="mx-auto w-full max-w-2xl space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold">지점 선택</h1>
+            <h1 className="text-2xl font-semibold">매장 선택</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              넷플릭스처럼 지점을 선택하고 들어갑니다.
+              매장을 선택하고 들어갑니다.
             </p>
           </div>
           <Button
@@ -114,8 +114,8 @@ export function StoresPage() {
                       {role === "owner"
                         ? "owner"
                         : role === "manager"
-                          ? "manager"
-                          : "staff"}
+                        ? "manager"
+                        : "staff"}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -133,10 +133,10 @@ export function StoresPage() {
           >
             <Card className="border-dashed hover:bg-accent/30">
               <CardHeader>
-                <CardTitle>+ 지점 추가</CardTitle>
+                <CardTitle>+ 매장 추가</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                처음이라면 지점을 생성하세요.
+                처음이라면 매장을 생성하세요.
               </CardContent>
             </Card>
           </button>
@@ -181,13 +181,13 @@ export function StoresPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>지점 검색 후 입장 요청</CardTitle>
+            <CardTitle>매장 검색 후 입장 요청</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
               <Input
                 value={search}
-                placeholder="지점 이름 검색"
+                placeholder="매장 이름 검색"
                 onChange={(e) => setSearch(e.target.value)}
               />
               <Button
@@ -206,16 +206,16 @@ export function StoresPage() {
                 const disabled = !user || isMember || isPending;
 
                 const subtitle = isMember
-                  ? "이미 입장한 지점"
+                  ? "이미 입장한 매장"
                   : isPending
-                    ? "요청 대기중"
-                    : "검색 가능";
+                  ? "요청 대기중"
+                  : "검색 가능";
 
                 const buttonLabel = isMember
                   ? "입장됨"
                   : isPending
-                    ? "대기"
-                    : "요청";
+                  ? "대기"
+                  : "요청";
 
                 return (
                   <div
@@ -270,7 +270,7 @@ export function StoresPage() {
           />
           <div className="absolute bottom-0 left-0 right-0 mx-auto w-full max-w-2xl rounded-t-2xl border bg-background p-4">
             <div className="flex items-center justify-between">
-              <div className="text-base font-semibold">지점 생성</div>
+              <div className="text-base font-semibold">매장 생성</div>
               <Button variant="ghost" onClick={() => setCreateOpen(false)}>
                 닫기
               </Button>
@@ -278,7 +278,7 @@ export function StoresPage() {
 
             <div className="mt-3 grid gap-3">
               <div className="grid gap-1">
-                <div className="text-sm font-medium">지점 이름</div>
+                <div className="text-sm font-medium">매장 이름</div>
                 <Input
                   value={storeName}
                   placeholder="예) 우리동네점"
