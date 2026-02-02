@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Pin } from "lucide-react";
+import { AlertTriangle, FileText } from "lucide-react";
 
 import { dayjs } from "@/lib/day";
 import { useAuthStore } from "@/stores/auth.store";
@@ -63,27 +63,153 @@ export function HomePage() {
     loadHome({ userId: user.id, storeIds }).catch(() => {});
   }, [loadHome, storeIds, user]);
 
-  const todayKey = useMemo(() => dayjs().format("YYYY-MM-DD"), []);
+  const storeNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const { store } of myStores) m.set(store.id, store.name);
+    return m;
+  }, [myStores]);
+
+  const allShifts = useMemo(
+    () =>
+      Object.entries(shiftsByStore)
+        .flatMap(([, shifts]) => shifts)
+        .filter((s) => s.starts_at && s.ends_at)
+        .sort((a, b) => (a.starts_at ?? "").localeCompare(b.starts_at ?? "")),
+    [shiftsByStore]
+  );
+
+  const now = dayjs();
+  const currentShift = useMemo(
+    () =>
+      allShifts.find((s) => {
+        const start = dayjs(s.starts_at);
+        const end = dayjs(s.ends_at);
+        return now.isSameOrAfter(start) && now.isBefore(end);
+      }),
+    [allShifts, now]
+  );
+
+  const nextShift = useMemo(
+    () => allShifts.find((s) => dayjs(s.starts_at).isAfter(now)),
+    [allShifts, now]
+  );
+
+  const regularAnnouncements = useMemo(() => {
+    const pinned = new Set(pinnedIds);
+    return Object.values(announcementsByStore)
+      .flat()
+      .filter((a) => !pinned.has(a.id))
+      .slice(0, 5);
+  }, [announcementsByStore, pinnedIds]);
 
   return (
     <div className="min-h-full px-4 py-6">
       <div className="mx-auto w-full max-w-2xl space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold">홈</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            오늘 근무/다가올 근무, 공지, TODO를 한 번에 봅니다.
-          </p>
-        </div>
-
         {error ? (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         ) : null}
 
+        {currentShift ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">현재 근무</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">
+                    {formatTime(currentShift.starts_at)} ~{" "}
+                    {formatTime(currentShift.ends_at)}
+                  </div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {storeNameMap.get(currentShift.store_id ?? "") ?? "매장"}
+                  </div>
+                </div>
+                <span className="rounded-md bg-primary/10 px-2 py-1 text-sm font-medium text-primary">
+                  진행 중
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {nextShift ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">다음 근무</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <div className="font-medium">
+                  {dayjs(nextShift.starts_at).format("MM/DD (ddd) HH:mm")} ~{" "}
+                  {formatTime(nextShift.ends_at)}
+                </div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {storeNameMap.get(nextShift.store_id ?? "") ?? "매장"}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {pinnedAnnouncements.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                오늘의 긴급 공지
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {pinnedAnnouncements.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/5 p-2"
+                >
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{a.title ?? "공지"}</div>
+                    {a.content ? (
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {a.content}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {regularAnnouncements.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">정기 공지</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {regularAnnouncements.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-start gap-2 rounded-md border p-2"
+                >
+                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{a.title ?? "공지"}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {dayjs(a.created_at).format("MM/DD HH:mm")}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
+
         <Card>
           <CardHeader>
-            <CardTitle>내 TODO</CardTitle>
+            <CardTitle className="text-base">My TODO</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
@@ -146,202 +272,13 @@ export function HomePage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>중요 표시한 공지</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {pinnedAnnouncements.map((a) => (
-              <div key={a.id} className="rounded-md border bg-background p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-medium">
-                      {a.title ?? "공지"}
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {dayjs(a.created_at).format("MM/DD HH:mm")}
-                    </div>
-                  </div>
-                  {user ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        togglePin({ userId: user.id, recordId: a.id })
-                      }
-                    >
-                      해제
-                    </Button>
-                  ) : null}
-                </div>
-                {a.content ? (
-                  <div className="mt-2 whitespace-pre-wrap text-sm">
-                    {a.content}
-                  </div>
-                ) : null}
-              </div>
-            ))}
-            {pinnedAnnouncements.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                중요 표시한 공지가 없습니다.
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-3">
-          {myStores.map(({ store, role }) => {
-            const shifts = shiftsByStore[store.id] ?? [];
-            const anns = announcementsByStore[store.id] ?? [];
-
-            const todayShifts = shifts.filter((s) =>
-              s.starts_at
-                ? dayjs(s.starts_at).format("YYYY-MM-DD") === todayKey
-                : false
-            );
-
-            const upcoming = shifts.filter((s) =>
-              s.starts_at
-                ? dayjs(s.starts_at).isAfter(dayjs(), "minute")
-                : false
-            );
-            const nextTwo = upcoming.slice(0, 2);
-
-            const recentAnns = anns.slice(0, 2);
-
-            return (
-              <Card key={store.id}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{store.name}</span>
-                    <span className="rounded-md border px-2 py-1 text-xs text-muted-foreground">
-                      {role}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">오늘 근무</div>
-                    {todayShifts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        오늘 근무 없음
-                      </p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {todayShifts.map((s) => (
-                          <li
-                            key={s.id}
-                            className="rounded-md border p-2 text-sm"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span>{s.title ?? "근무"}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatTime(s.starts_at)}~
-                                {formatTime(s.ends_at)}
-                              </span>
-                            </div>
-                            {s.content ? (
-                              <div className="mt-1 text-xs text-muted-foreground">
-                                {s.content}
-                              </div>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">다가올 근무</div>
-                    {nextTwo.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        예정된 근무 없음
-                      </p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {nextTwo.map((s) => (
-                          <li
-                            key={s.id}
-                            className="rounded-md border p-2 text-sm"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span>{s.title ?? "근무"}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {dayjs(s.starts_at).format("MM/DD (ddd) HH:mm")}
-                              </span>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">최근 공지</div>
-                    {recentAnns.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">공지 없음</p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {recentAnns.map((a) => (
-                          <li
-                            key={a.id}
-                            className="rounded-md border p-2 text-sm"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <div className="font-medium">
-                                  {a.title ?? "공지"}
-                                </div>
-                                <div className="mt-1 text-xs text-muted-foreground">
-                                  {dayjs(a.created_at).format("MM/DD HH:mm")}
-                                </div>
-                              </div>
-                              {user ? (
-                                <button
-                                  type="button"
-                                  className="rounded-md border p-2 text-muted-foreground hover:bg-accent"
-                                  onClick={() =>
-                                    togglePin({
-                                      userId: user.id,
-                                      recordId: a.id,
-                                    })
-                                  }
-                                  aria-label="중요 표시"
-                                >
-                                  <Pin
-                                    className={
-                                      pinnedIds.has(a.id)
-                                        ? "h-4 w-4 text-foreground"
-                                        : "h-4 w-4"
-                                    }
-                                  />
-                                </button>
-                              ) : null}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/store")}
-                    >
-                      매장 보기
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate("/calendar")}
-                    >
-                      캘린더
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/store")}>
+            매장 보기
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/calendar")}>
+            캘린더
+          </Button>
         </div>
 
         <div className="text-xs text-muted-foreground">

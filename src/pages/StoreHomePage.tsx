@@ -19,7 +19,6 @@ function formatTime(iso: string | null) {
 export function StoreHomePage() {
   const navigate = useNavigate();
   const { store, storeId } = useCurrentStore();
-  const myStores = useStoreStore((s) => s.myStores);
   const loadHome = useHomeStore((s) => s.loadHome);
   const shiftsByStore = useHomeStore((s) => s.shiftsByStore);
   const announcementsByStore = useHomeStore((s) => s.announcementsByStore);

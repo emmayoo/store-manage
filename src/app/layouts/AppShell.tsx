@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Bell, CalendarDays, Home, Plus, Store, User } from "lucide-react";
+import { Bell, CalendarDays, Home, Store, User } from "lucide-react";
 import type { ComponentType } from "react";
 
 import { cn } from "@/lib/utils";
@@ -12,13 +12,12 @@ type TabItem = {
   Icon: ComponentType<{ className?: string }>;
 };
 
-/** 와이어프레임: Home | Cal | + | Store | My */
+/** 참조: Home | Calendar | Stores | Settings (4탭) */
 const TABS: TabItem[] = [
-  { to: "/home", label: "홈", Icon: Home },
-  { to: "/calendar", label: "캘린더", Icon: CalendarDays },
-  { to: "/add", label: "", Icon: Plus },
-  { to: "/store", label: "매장", Icon: Store },
-  { to: "/settings", label: "My", Icon: User },
+  { to: "/home", label: "Home", Icon: Home },
+  { to: "/calendar", label: "Calendar", Icon: CalendarDays },
+  { to: "/store", label: "Stores", Icon: Store },
+  { to: "/settings", label: "Settings", Icon: User },
 ];
 
 export function AppShell() {
@@ -32,6 +31,16 @@ export function AppShell() {
   const showBack =
     location.pathname.startsWith("/settings/") &&
     location.pathname !== "/settings";
+
+  const headerTitle = (() => {
+    if (location.pathname === "/home") return "Home";
+    if (location.pathname === "/calendar") return "Calendar";
+    if (location.pathname.startsWith("/store")) return storeName;
+    if (location.pathname.startsWith("/settings")) return "Settings";
+    return storeName;
+  })();
+
+  const notifyCount = 2;
 
   useEffect(() => {
     if (!notifyOpen) return;
@@ -106,7 +115,7 @@ export function AppShell() {
       </div>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto grid max-w-2xl grid-cols-5 px-1 pb-[env(safe-area-inset-bottom)] pt-2">
+        <div className="mx-auto grid max-w-2xl grid-cols-4 px-1 pb-[env(safe-area-inset-bottom)] pt-2">
           {TABS.map(({ to, label, Icon }) => (
             <NavLink
               key={to}

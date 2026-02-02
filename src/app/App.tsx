@@ -17,7 +17,6 @@ import { SettingsStorePage } from "@/pages/SettingsStorePage";
 import { SettingsAppPage } from "@/pages/SettingsAppPage";
 import { HomePage } from "@/pages/HomePage";
 import { StorePage } from "@/pages/StorePage";
-import { AddPage } from "@/pages/AddPage";
 import { StoreHomePage } from "@/pages/StoreHomePage";
 import { StoreSchedulePage } from "@/pages/StoreSchedulePage";
 import { StoreNoticesPage } from "@/pages/StoreNoticesPage";
@@ -61,7 +60,12 @@ export default function App() {
             <Route index element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/add" element={<AddPage />} />
+            <Route
+              path="/add"
+              element={
+                <Navigate to="/home" replace state={{ focusTodo: true }} />
+              }
+            />
             <Route path="/store" element={<StorePage />}>
               <Route index element={<StoreHomePage />} />
               <Route path="schedule" element={<StoreSchedulePage />} />

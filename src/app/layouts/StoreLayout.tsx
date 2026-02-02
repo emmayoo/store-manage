@@ -10,13 +10,13 @@ type StoreTabItem = {
   Icon: ComponentType<{ className?: string }>;
 };
 
-/** 와이어프레임: 홈 | 스케줄 | 공지 | 폐기 | 구성원 (한글 일관) */
+/** 참조: Home | Schedule | Notices | 폐기 | People */
 const STORE_TABS: StoreTabItem[] = [
-  { to: "/store", label: "홈", Icon: Home },
-  { to: "/store/schedule", label: "스케줄", Icon: Calendar },
-  { to: "/store/notices", label: "공지", Icon: FileText },
+  { to: "/store", label: "Home", Icon: Home },
+  { to: "/store/schedule", label: "Schedule", Icon: Calendar },
+  { to: "/store/notices", label: "Notices", Icon: FileText },
   { to: "/store/expiry", label: "폐기", Icon: AlertTriangle },
-  { to: "/store/people", label: "구성원", Icon: Users },
+  { to: "/store/people", label: "People", Icon: Users },
 ];
 
 export function StoreTabs() {
