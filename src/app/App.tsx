@@ -22,6 +22,7 @@ import { StoreSchedulePage } from "@/pages/StoreSchedulePage";
 import { StoreNoticesPage } from "@/pages/StoreNoticesPage";
 import { StoreExpiryPage } from "@/pages/StoreExpiryPage";
 import { StorePeoplePage } from "@/pages/StorePeoplePage";
+import { StoreAvailabilityPage } from "@/pages/StoreAvailabilityPage";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const status = useAuthStore((s) => s.status);
@@ -72,6 +73,7 @@ export default function App() {
               <Route path="notices" element={<StoreNoticesPage />} />
               <Route path="expiry" element={<StoreExpiryPage />} />
               <Route path="people" element={<StorePeoplePage />} />
+              <Route path="availability" element={<StoreAvailabilityPage />} />
             </Route>
             <Route path="/manage" element={<Navigate to="/store" replace />} />
             <Route path="/history" element={<HistoryPage />} />

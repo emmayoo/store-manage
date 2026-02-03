@@ -126,6 +126,43 @@ export type Database = {
         };
         Relationships: [];
       };
+      staff_availability: {
+        Row: {
+          store_id: string;
+          user_id: string;
+          monday: boolean;
+          tuesday: boolean;
+          wednesday: boolean;
+          thursday: boolean;
+          friday: boolean;
+          saturday: boolean;
+          sunday: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          store_id: string;
+          user_id: string;
+          monday?: boolean;
+          tuesday?: boolean;
+          wednesday?: boolean;
+          thursday?: boolean;
+          friday?: boolean;
+          saturday?: boolean;
+          sunday?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          monday?: boolean;
+          tuesday?: boolean;
+          wednesday?: boolean;
+          thursday?: boolean;
+          friday?: boolean;
+          saturday?: boolean;
+          sunday?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       store_join_requests: {
         Row: {
           id: string;

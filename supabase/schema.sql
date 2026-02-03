@@ -182,6 +182,24 @@ create table if not exists public.store_join_requests (
 );
 
 -- ---------------------------------------------------------------------------
+-- Staff availability (직원 근무 가능 요일)
+-- store_id + user_id 당 1행, 요일별 boolean
+-- ---------------------------------------------------------------------------
+create table if not exists public.staff_availability (
+  store_id uuid not null references public.stores(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  monday boolean not null default false,
+  tuesday boolean not null default false,
+  wednesday boolean not null default false,
+  thursday boolean not null default false,
+  friday boolean not null default false,
+  saturday boolean not null default false,
+  sunday boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (store_id, user_id)
+);
+
+-- ---------------------------------------------------------------------------
 -- Profiles (내 정보)
 -- ---------------------------------------------------------------------------
 create table if not exists public.profiles (
@@ -440,6 +458,7 @@ $$;
 alter table public.stores enable row level security;
 alter table public.store_members enable row level security;
 alter table public.store_join_requests enable row level security;
+alter table public.staff_availability enable row level security;
 alter table public.profiles enable row level security;
 alter table public.record_pins enable row level security;
 
@@ -511,6 +530,35 @@ create policy "join_requests_select_self_or_admin"
     )
   );
 
+-- staff_availability: 본인 row는 CRUD, manager/owner는 select 가능
+create policy "staff_availability_select"
+  on public.staff_availability for select
+  using (
+    exists (
+      select 1 from public.store_members m
+      where m.store_id = staff_availability.store_id
+        and m.user_id = auth.uid()
+        and m.deleted_at is null
+    )
+  );
+
+create policy "staff_availability_insert_own"
+  on public.staff_availability for insert
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1 from public.store_members m
+      where m.store_id = staff_availability.store_id
+        and m.user_id = auth.uid()
+        and m.deleted_at is null
+    )
+  );
+
+create policy "staff_availability_update_own"
+  on public.staff_availability for update
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
 -- profiles: 본인 프로필 CRUD
 drop policy if exists "profiles_select_own" on public.profiles;
 drop policy if exists "profiles_upsert_own" on public.profiles;
@@ -564,3 +612,18 @@ alter table public.profiles add column if not exists avatar_path text null;
 alter table public.profiles add column if not exists color text null;
 alter table public.profiles add column if not exists memo text null;
 alter table public.profiles add column if not exists deleted_at timestamptz null;
+
+-- staff_availability (신규)
+create table if not exists public.staff_availability (
+  store_id uuid not null references public.stores(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  monday boolean not null default false,
+  tuesday boolean not null default false,
+  wednesday boolean not null default false,
+  thursday boolean not null default false,
+  friday boolean not null default false,
+  saturday boolean not null default false,
+  sunday boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (store_id, user_id)
+);
