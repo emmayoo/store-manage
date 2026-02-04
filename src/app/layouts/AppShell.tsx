@@ -32,12 +32,13 @@ export function AppShell() {
     location.pathname.startsWith("/settings/") &&
     location.pathname !== "/settings";
 
+  const isStoreTab = location.pathname.startsWith("/store");
   const headerTitle = (() => {
     if (location.pathname === "/home") return "Home";
     if (location.pathname === "/calendar") return "Calendar";
-    if (location.pathname.startsWith("/store")) return storeName;
+    if (location.pathname.startsWith("/store")) return "Store";
     if (location.pathname.startsWith("/settings")) return "Settings";
-    return storeName;
+    return "Home";
   })();
 
   const notifyCount = 2;
@@ -68,14 +69,17 @@ export function AppShell() {
                 뒤로
               </button>
             ) : null}
-            <button
-              type="button"
-              className="text-base font-semibold hover:underline"
-              onClick={() => navigate("/store")}
-              title="매장 전환"
-            >
-              {storeName} ▼
-            </button>
+            <span className="text-base font-semibold">{headerTitle}</span>
+            {isStoreTab && (
+              <button
+                type="button"
+                className="text-base font-semibold hover:underline"
+                onClick={() => navigate("/store")}
+                title="매장 전환"
+              >
+                {storeName} ▼
+              </button>
+            )}
           </div>
           <div className="relative" ref={notifyRef}>
             <button
