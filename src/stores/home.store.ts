@@ -30,10 +30,9 @@ type HomeState = {
 function groupByStoreId(rows: RecordRow[]) {
   const map: Record<string, RecordRow[]> = {};
   for (const r of rows) {
-    const sid = r.store_id;
-    if (!sid) continue;
-    map[sid] ??= [];
-    map[sid].push(r);
+    if (!r.store_id) continue;
+    map[r.store_id] ??= [];
+    map[r.store_id].push(r);
   }
   return map;
 }
@@ -41,8 +40,11 @@ function groupByStoreId(rows: RecordRow[]) {
 function getDone(todo: RecordRow) {
   const payload = todo.payload;
   if (!payload || typeof payload !== "object") return false;
-  const v = (payload as { done?: unknown }).done;
-  return v === true;
+  return (payload as { done?: boolean }).done === true;
+}
+
+function asRecordRow<T>(data: T): RecordRow {
+  return data as unknown as RecordRow;
 }
 
 export const useHomeStore = create<HomeState>((set, get) => ({
@@ -58,89 +60,67 @@ export const useHomeStore = create<HomeState>((set, get) => ({
   loadHome: async ({ userId, storeIds }) => {
     set({ loading: true, error: null });
 
+    const storeIdsFilter =
+      storeIds.length > 0 ? storeIds : ["00000000-0000-0000-0000-000000000000"];
     const todayStart = dayjs().startOf("day").toISOString();
     const upcomingEnd = dayjs().add(7, "day").endOf("day").toISOString();
-
-    // 1) shifts (today + upcoming 7 days) by store
-    const { data: shifts, error: sErr } = await supabase
-      .from("records")
-      .select("*")
-      .eq("type", "shift")
-      .in(
-        "store_id",
-        storeIds.length ? storeIds : ["00000000-0000-0000-0000-000000000000"],
-      )
-      .is("deleted_at", null)
-      .gte("starts_at", todayStart)
-      .lte("starts_at", upcomingEnd)
-      .order("starts_at", { ascending: true });
-
-    if (sErr) {
-      set({ loading: false, error: sErr.message });
-      return;
-    }
-
-    // 2) announcements (recent 14 days)
     const annStart = dayjs().subtract(14, "day").startOf("day").toISOString();
-    const { data: anns, error: aErr } = await supabase
-      .from("records")
-      .select("*")
-      .eq("type", "announcement")
-      .in(
-        "store_id",
-        storeIds.length ? storeIds : ["00000000-0000-0000-0000-000000000000"],
-      )
-      .is("deleted_at", null)
-      .gte("created_at", annStart)
-      .order("created_at", { ascending: false })
-      .limit(100);
 
-    if (aErr) {
-      set({ loading: false, error: aErr.message });
+    const [shiftsRes, annsRes, pinsRes, todosRes] = await Promise.all([
+      supabase
+        .from("records")
+        .select("*")
+        .eq("type", "shift")
+        .in("store_id", storeIdsFilter)
+        .is("deleted_at", null)
+        .gte("starts_at", todayStart)
+        .lte("starts_at", upcomingEnd)
+        .order("starts_at", { ascending: true }),
+      supabase
+        .from("records")
+        .select("*")
+        .eq("type", "announcement")
+        .in("store_id", storeIdsFilter)
+        .is("deleted_at", null)
+        .gte("created_at", annStart)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase.from("record_pins").select("*").eq("user_id", userId),
+      supabase
+        .from("records")
+        .select("*")
+        .eq("type", "todo")
+        .eq("created_by", userId)
+        .is("store_id", null)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+
+    if (shiftsRes.error || annsRes.error || pinsRes.error || todosRes.error) {
+      const err =
+        shiftsRes.error || annsRes.error || pinsRes.error || todosRes.error;
+      set({ loading: false, error: err?.message ?? "Unknown error" });
       return;
     }
 
-    // 3) pins
-    const { data: pins, error: pErr } = await supabase
-      .from("record_pins")
-      .select("*")
-      .eq("user_id", userId);
-
-    if (pErr) {
-      set({ loading: false, error: pErr.message });
-      return;
-    }
-
-    const pinnedIds = new Set(
-      (pins ?? []).map((p) => (p as unknown as PinRow).record_id),
+    const shifts = (shiftsRes.data ?? []).map(asRecordRow);
+    const anns = (annsRes.data ?? []).map(asRecordRow);
+    const pins = (pinsRes.data ?? []).map(
+      (p) => (p as unknown as PinRow).record_id
     );
-    const pinnedAnnouncements = (anns ?? []).filter((r) => pinnedIds.has(r.id));
+    const todos = (todosRes.data ?? []).map(asRecordRow);
 
-    // 4) personal todos (store_id null)
-    const { data: todos, error: tErr } = await supabase
-      .from("records")
-      .select("*")
-      .eq("type", "todo")
-      .eq("created_by", userId)
-      .is("store_id", null)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (tErr) {
-      set({ loading: false, error: tErr.message });
-      return;
-    }
+    const pinnedIds = new Set(pins);
+    const pinnedAnnouncements = anns.filter((r) => pinnedIds.has(r.id));
 
     set({
       loading: false,
-      shiftsByStore: groupByStoreId((shifts ?? []) as unknown as RecordRow[]),
-      announcementsByStore: groupByStoreId(
-        (anns ?? []) as unknown as RecordRow[],
-      ),
+      shiftsByStore: groupByStoreId(shifts),
+      announcementsByStore: groupByStoreId(anns),
       pinnedIds,
-      pinnedAnnouncements: pinnedAnnouncements as unknown as RecordRow[],
-      todos: (todos ?? []) as unknown as RecordRow[],
+      pinnedAnnouncements,
+      todos,
     });
   },
 
@@ -148,47 +128,42 @@ export const useHomeStore = create<HomeState>((set, get) => ({
     const pinned = get().pinnedIds.has(recordId);
     set({ error: null });
 
-    if (pinned) {
-      const { error } = await supabase
-        .from("record_pins")
-        .delete()
-        .eq("user_id", userId)
-        .eq("record_id", recordId);
-      if (error) {
-        set({ error: error.message });
-        return;
-      }
-      const next = new Set(get().pinnedIds);
-      next.delete(recordId);
-      set({
-        pinnedIds: next,
-        pinnedAnnouncements: get().pinnedAnnouncements.filter(
-          (a) => a.id !== recordId,
-        ),
-      });
-      return;
-    }
+    const { error } = pinned
+      ? await supabase
+          .from("record_pins")
+          .delete()
+          .eq("user_id", userId)
+          .eq("record_id", recordId)
+      : await supabase.from("record_pins").insert({
+          user_id: userId,
+          record_id: recordId,
+        });
 
-    const { error } = await supabase.from("record_pins").insert({
-      user_id: userId,
-      record_id: recordId,
-    });
     if (error) {
       set({ error: error.message });
       return;
     }
-    const next = new Set(get().pinnedIds);
-    next.add(recordId);
 
-    // 현재 로드된 공지 중에서 매칭되면 pinnedAnnouncements에 추가
-    const allAnnouncements = Object.values(get().announcementsByStore).flat();
-    const found = allAnnouncements.find((r) => r.id === recordId);
-    set({
-      pinnedIds: next,
-      pinnedAnnouncements: found
-        ? [found, ...get().pinnedAnnouncements]
-        : get().pinnedAnnouncements,
-    });
+    const next = new Set(get().pinnedIds);
+    if (pinned) {
+      next.delete(recordId);
+      set({
+        pinnedIds: next,
+        pinnedAnnouncements: get().pinnedAnnouncements.filter(
+          (a) => a.id !== recordId
+        ),
+      });
+    } else {
+      next.add(recordId);
+      const allAnnouncements = Object.values(get().announcementsByStore).flat();
+      const found = allAnnouncements.find((r) => r.id === recordId);
+      set({
+        pinnedIds: next,
+        pinnedAnnouncements: found
+          ? [found, ...get().pinnedAnnouncements]
+          : get().pinnedAnnouncements,
+      });
+    }
   },
 
   addTodo: async ({ userId, content }) => {
@@ -212,15 +187,14 @@ export const useHomeStore = create<HomeState>((set, get) => ({
       set({ error: error.message });
       return;
     }
-    set({ todos: [data as unknown as RecordRow, ...get().todos] });
+    set({ todos: [asRecordRow(data), ...get().todos] });
   },
 
   toggleTodoDone: async ({ todo }) => {
     const done = getDone(todo);
-    const nextPayload = {
-      ...(typeof todo.payload === "object" && todo.payload ? todo.payload : {}),
-      done: !done,
-    };
+    const payload =
+      typeof todo.payload === "object" && todo.payload ? todo.payload : {};
+    const nextPayload = { ...payload, done: !done };
 
     const { data, error } = await supabase
       .from("records")
@@ -234,9 +208,8 @@ export const useHomeStore = create<HomeState>((set, get) => ({
       return;
     }
 
-    const next = get().todos.map((t) =>
-      t.id === todo.id ? (data as unknown as RecordRow) : t,
-    );
-    set({ todos: next });
+    set({
+      todos: get().todos.map((t) => (t.id === todo.id ? asRecordRow(data) : t)),
+    });
   },
 }));
