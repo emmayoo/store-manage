@@ -5,10 +5,50 @@ import { useCurrentStore } from "@/features/store/useCurrentStore";
 import { Button } from "@/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 
+type SettingCardProps = {
+  title: string;
+  description?: string;
+  buttonLabel: string;
+  buttonVariant?: "default" | "outline";
+  onButtonClick: () => void;
+  children?: React.ReactNode;
+};
+
+function SettingCard({
+  title,
+  description,
+  buttonLabel,
+  buttonVariant = "default",
+  onButtonClick,
+  children,
+}: SettingCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {description && (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        )}
+        {children}
+        <Button variant={buttonVariant} onClick={onButtonClick}>
+          {buttonLabel}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SettingsPage() {
   const navigate = useNavigate();
   const signOut = useAuthStore((s) => s.signOut);
   const { store, role, canEditStore } = useCurrentStore();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <div className="min-h-full px-4 py-6">
@@ -20,68 +60,41 @@ export function SettingsPage() {
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>내 계정</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              스케줄/기록에 표시될 이름을 관리합니다.
-            </p>
-            <Button onClick={() => navigate("/settings/me")}>
-              내 정보 수정
-            </Button>
-          </CardContent>
-        </Card>
+        <SettingCard
+          title="내 계정"
+          description="스케줄/기록에 표시될 이름을 관리합니다."
+          buttonLabel="내 정보 수정"
+          onButtonClick={() => navigate("/settings/me")}
+        />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>매장</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm">
-              <span className="text-muted-foreground">현재 매장: </span>
-              <span className="font-medium">{store?.name ?? "매장"}</span>
-              <span className="ml-2 rounded-md border px-2 py-1 text-xs text-muted-foreground">
-                {role}
-              </span>
-            </div>
-            <Button onClick={() => navigate("/settings/store")}>
-              매장 정보 / 직원 / 승인
-            </Button>
-            {canEditStore ? (
-              <p className="text-xs text-muted-foreground">
-                Owner 권한으로 매장 수정/초대/직원 관리가 가능합니다.
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                매장 정보는 조회 가능하며, 수정은 Owner만 가능합니다.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>앱 설정</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              개인별 알림/테마 같은 설정입니다.
-            </p>
-            <Button variant="outline" onClick={() => navigate("/settings/app")}>
-              앱 설정
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Button
-          variant="outline"
-          onClick={async () => {
-            await signOut();
-            navigate("/login", { replace: true });
-          }}
+        <SettingCard
+          title="매장"
+          buttonLabel="매장 정보 / 직원 / 승인"
+          onButtonClick={() => navigate("/settings/store")}
         >
+          <div className="text-sm">
+            <span className="text-muted-foreground">현재 매장: </span>
+            <span className="font-medium">{store?.name ?? "매장"}</span>
+            <span className="ml-2 rounded-md border px-2 py-1 text-xs text-muted-foreground">
+              {role}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {canEditStore
+              ? "Owner 권한으로 매장 수정/초대/직원 관리가 가능합니다."
+              : "매장 정보는 조회 가능하며, 수정은 Owner만 가능합니다."}
+          </p>
+        </SettingCard>
+
+        <SettingCard
+          title="앱 설정"
+          description="개인별 알림/테마 같은 설정입니다."
+          buttonLabel="앱 설정"
+          buttonVariant="outline"
+          onButtonClick={() => navigate("/settings/app")}
+        />
+
+        <Button variant="outline" onClick={handleSignOut}>
           로그아웃
         </Button>
       </div>
